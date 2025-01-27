@@ -1,7 +1,7 @@
 const GITHUB_API_BASE = 'https://api.github.com';
 const REPO_OWNER = 'zigwangles';
 const REPO_NAME = 'ZWF';
-const TOKEN = 'your-personal-access-token'; // GitHub personal access token
+const TOKEN = 'ZWF_Token'; // GitHub personal access token
 
 // Initialize the admin panel
 window.onload = () => {
