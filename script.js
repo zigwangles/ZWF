@@ -1,72 +1,203 @@
-// Categories with corresponding GitHub folder paths
-const CATEGORIES = {
-    "Programming": "https://raw.githubusercontent.com/your-repo/programming/",
-    "Web Development": "https://raw.githubusercontent.com/your-repo/web-development/",
-    // Add more categories (30-50 categories in total)
+const GITHUB_API_BASE = 'https://api.github.com';
+const REPO_OWNER = 'your-username';
+const REPO_NAME = 'your-repo';
+const TOKEN = 'your-personal-access-token'; // GitHub personal access token
+
+// Initialize the admin panel
+window.onload = () => {
+    loadCategories();
+    loadCategoriesForEditing();
 };
 
-// Element references
-const categoriesDiv = document.getElementById('categories');
-const tutorialContentDiv = document.getElementById('tutorial-content');
-const searchInput = document.getElementById('search');
-
-// Load categories
+// Load categories into select boxes
 function loadCategories() {
-    Object.keys(CATEGORIES).forEach(category => {
-        const categoryDiv = document.createElement('div');
-        categoryDiv.classList.add('category');
-        categoryDiv.innerText = category;
-        categoryDiv.onclick = () => loadTutorials(category);
-        categoriesDiv.appendChild(categoryDiv);
-    });
-}
+    fetch(`${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents`)
+        .then(response => response.json())
+        .then(data => {
+            const categorySelect = document.getElementById('categorySelect');
+            const editCategorySelect = document.getElementById('editCategorySelect');
+            categorySelect.innerHTML = '';
+            editCategorySelect.innerHTML = '';
 
-// Load tutorials for a selected category
-function loadTutorials(category) {
-    const repoUrl = CATEGORIES[category];
-    fetchGitHubFolder(repoUrl, category);
-}
+            data.forEach(folder => {
+                if (folder.type === 'dir') {
+                    const option = document.createElement('option');
+                    option.value = folder.name;
+                    option.textContent = folder.name;
+                    categorySelect.appendChild(option);
 
-// Fetches a folder (category) from the GitHub repository
-function fetchGitHubFolder(repoUrl, category) {
-    // In a real case, you would fetch the repo files (or manually list them)
-    // Let's simulate loading two .md files for now:
-    const tutorial1Url = `${repoUrl}tutorial1.md`;
-    const tutorial2Url = `${repoUrl}tutorial2.md`;
-
-    displayTutorialList(category, [tutorial1Url, tutorial2Url]);
-}
-
-// Display list of tutorials for the selected category
-function displayTutorialList(category, tutorialUrls) {
-    tutorialContentDiv.innerHTML = `<h2>${category} Tutorials</h2>`;
-    
-    tutorialUrls.forEach(url => {
-        const tutorialDiv = document.createElement('div');
-        tutorialDiv.innerHTML = `<a href="#" onclick="loadTutorial('${url}')">${url.split('/').pop()}</a>`;
-        tutorialContentDiv.appendChild(tutorialDiv);
-    });
-}
-
-// Load and render a tutorial
-function loadTutorial(url) {
-    fetch(url)
-        .then(response => response.text())
-        .then(markdown => {
-            const html = marked.parse(markdown);
-            tutorialContentDiv.innerHTML = html;
-        })
-        .catch(error => {
-            tutorialContentDiv.innerHTML = `<p>Error loading tutorial: ${error.message}</p>`;
+                    const editOption = document.createElement('option');
+                    editOption.value = folder.name;
+                    editOption.textContent = folder.name;
+                    editCategorySelect.appendChild(editOption);
+                }
+            });
         });
 }
 
-// Reveal admin panel if search matches the secret keyword
-searchInput.addEventListener('input', (e) => {
-    if (e.target.value === 'admin-access-keyword') {
-        window.location.href = 'admin.html';
+// Create new category (folder)
+function createCategory() {
+    const categoryName = document.getElementById('newCategory').value;
+    if (!categoryName) {
+        alert('Please enter a category name.');
+        return;
     }
+
+    const url = `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${categoryName}/.gitkeep`;
+    const body = {
+        message: `Create category ${categoryName}`,
+        content: btoa(''), // Empty file
+    };
+
+    fetch(url, {
+        method: 'PUT',
+        headers: {
+            Authorization: `token ${TOKEN}`,
+            Accept: 'application/vnd.github.v3+json',
+        },
+        body: JSON.stringify(body),
+    })
+    .then(response => response.json())
+    .then(() => {
+        alert(`Category "${categoryName}" created!`);
+        loadCategories();
+        loadCategoriesForEditing();
+    })
+    .catch(error => console.error('Error creating category:', error));
+}
+
+// Create new tutorial (.md file)
+function createTutorial() {
+    const category = document.getElementById('categorySelect').value;
+    const title = document.getElementById('tutorialTitle').value;
+    const content = document.getElementById('tutorialContent').value;
+    const filePath = `${category}/${title}.md`;
+
+    const url = `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${filePath}`;
+    const body = {
+        message: `Add new tutorial: ${title}`,
+        content: btoa(content), // Convert content to base64
+    };
+
+    fetch(url, {
+        method: 'PUT',
+        headers: {
+            Authorization: `token ${TOKEN}`,
+            Accept: 'application/vnd.github.v3+json',
+        },
+        body: JSON.stringify(body),
+    })
+    .then(response => response.json())
+    .then(() => {
+        alert(`Tutorial "${title}" created!`);
+        loadTutorialsForEditing();
+    })
+    .catch(error => console.error('Error creating tutorial:', error));
+}
+
+// Load tutorials for editing/deleting
+function loadTutorialsForEditing() {
+    const category = document.getElementById('editCategorySelect').value;
+    fetch(`${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${category}`)
+        .then(response => response.json())
+        .then(data => {
+            const tutorialSelect = document.getElementById('tutorialSelect');
+            tutorialSelect.innerHTML = '';
+            data.forEach(file => {
+                if (file.name.endsWith('.md')) {
+                    const option = document.createElement('option');
+                    option.value = file.name;
+                    option.textContent = file.name;
+                    tutorialSelect.appendChild(option);
+                }
+            });
+        });
+}
+
+// Load the content of a tutorial into the textarea for editing
+document.getElementById('tutorialSelect').addEventListener('change', () => {
+    const category = document.getElementById('editCategorySelect').value;
+    const tutorial = document.getElementById('tutorialSelect').value;
+    const url = `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${category}/${tutorial}`;
+
+    fetch(url, {
+        headers: {
+            Authorization: `token ${TOKEN}`,
+            Accept: 'application/vnd.github.v3+json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        const content = atob(data.content); // Convert base64 to string
+        document.getElementById('editTutorialContent').value = content;
+    });
 });
 
-// Initialize categories on page load
-loadCategories();
+// Edit an existing tutorial
+function editTutorial() {
+    const category = document.getElementById('editCategorySelect').value;
+    const tutorial = document.getElementById('tutorialSelect').value;
+    const content = document.getElementById('editTutorialContent').value;
+    const filePath = `${category}/${tutorial}`;
+
+    const url = `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${filePath}`;
+    const body = {
+        message: `Edit tutorial: ${tutorial}`,
+        content: btoa(content), // Convert content to base64
+        sha: getShaOfFile(filePath), // Fetch the SHA of the file to update it
+    };
+
+    fetch(url, {
+        method: 'PUT',
+        headers: {
+            Authorization: `token ${TOKEN}`,
+            Accept: 'application/vnd.github.v3+json',
+        },
+        body: JSON.stringify(body),
+    })
+    .then(response => response.json())
+    .then(() => {
+        alert(`Tutorial "${tutorial}" updated!`);
+    })
+    .catch(error => console.error('Error editing tutorial:', error));
+}
+
+// Delete a tutorial
+function deleteTutorial() {
+    const category = document.getElementById('editCategorySelect').value;
+    const tutorial = document.getElementById('tutorialSelect').value;
+    const filePath = `${category}/${tutorial}`;
+
+    const url = `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${filePath}`;
+    const body = {
+        message: `Delete tutorial: ${tutorial}`,
+        sha: getShaOfFile(filePath), // Fetch the SHA of the file to delete it
+    };
+
+    fetch(url, {
+        method: 'DELETE',
+        headers: {
+            Authorization: `token ${TOKEN}`,
+            Accept: 'application/vnd.github.v3+json',
+        },
+        body: JSON.stringify(body),
+    })
+    .then(() => {
+        alert(`Tutorial "${tutorial}" deleted!`);
+        loadTutorialsForEditing();
+    })
+    .catch(error => console.error('Error deleting tutorial:', error));
+}
+
+// Helper to get the SHA of a file (required for editing/deleting)
+function getShaOfFile(filePath) {
+    return fetch(`${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${filePath}`, {
+        headers: {
+            Authorization: `token ${TOKEN}`,
+            Accept: 'application/vnd.github.v3+json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => data.sha)
+    .catch(error => console.error('Error fetching file SHA:', error));
+}
