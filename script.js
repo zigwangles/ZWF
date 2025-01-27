@@ -1,6 +1,6 @@
 const GITHUB_API_BASE = 'https://api.github.com';
-const REPO_OWNER = 'your-username';
-const REPO_NAME = 'your-repo';
+const REPO_OWNER = 'zigwangles';
+const REPO_NAME = 'ZWF';
 const TOKEN = 'your-personal-access-token'; // GitHub personal access token
 
 // Initialize the admin panel
