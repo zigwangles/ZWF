@@ -1,0 +1,57 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background-color: #4CAF50;
+    padding: 20px;
+    text-align: center;
+    color: white;
+}
+
+header h1 {
+    margin: 0;
+}
+
+#search {
+    padding: 10px;
+    width: 300px;
+    margin-top: 10px;
+}
+
+main {
+    padding: 20px;
+}
+
+#categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.category {
+    background-color: white;
+    border: 1px solid #ddd;
+    padding: 20px;
+    width: 200px;
+    cursor: pointer;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+#tutorial-content {
+    margin-top: 20px;
+}
+
+footer {
+    background-color: #4CAF50;
+    padding: 10px;
+    text-align: center;
+    color: white;
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+}
