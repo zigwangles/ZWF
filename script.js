@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js";
 import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js";
-import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js";
 
 
 const firebaseConfig = {
@@ -23,7 +23,6 @@ const adminPanel = document.getElementById('adminPanel');
 const searchInput = document.getElementById('searchInput');
 const forumContainer = document.getElementById('forumContainer');
 
-
 // Admin Panel Elements
 const newCategoryNameInput = document.getElementById('newCategoryName');
 const addCategoryButton = document.getElementById('addCategoryButton');
@@ -38,7 +37,12 @@ const editTutorialCategorySelect = document.getElementById('editTutorialCategory
 const editMarkdownContentTextarea = document.getElementById('editMarkdownContent');
 const updateTutorialButton = document.getElementById('updateTutorialButton');
 const deleteTutorialButton = document.getElementById('deleteTutorialButton');
-
+const adminLoginForm = document.getElementById('adminLoginForm');
+const adminEmailInput = document.getElementById('adminEmail');
+const adminPasswordInput = document.getElementById('adminPassword');
+const adminLoginButton = document.getElementById('adminLoginButton');
+const loginErrorDisplay = document.getElementById('loginError');
+const adminPanelContent = document.getElementById('adminPanelContent');
 
 // Helper Functions
 async function fetchCategories() {
@@ -114,12 +118,28 @@ async function updateEditTutorialSelect(){
 }
 
 // Event Listeners
+// Search Functionality is now removed
+// Admin Panel Security
+adminLoginButton.addEventListener('click', async () =>{
+    const email = adminEmailInput.value;
+    const password = adminPasswordInput.value;
+    
+    try {
+    await signInWithEmailAndPassword(auth, email, password);
+    loginErrorDisplay.classList.add('hidden');
+    }catch(error){
+        console.log(error);
+       loginErrorDisplay.classList.remove('hidden');
+    }
+});
 
-searchInput.addEventListener('input', () => {
-    if (searchInput.value === "admin") {
-       adminPanel.classList.remove('hidden');
+onAuthStateChanged(auth, (user) => {
+    if(user){
+        adminPanelContent.classList.remove('hidden');
+        adminLoginForm.classList.add('hidden');
     }else{
-        adminPanel.classList.add('hidden');
+         adminPanelContent.classList.add('hidden');
+        adminLoginForm.classList.remove('hidden');
     }
 });
 
