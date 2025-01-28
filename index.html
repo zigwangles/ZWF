@@ -158,22 +158,22 @@
               computed: {
             },
             methods: {
-                login() {
-                    auth.signInWithEmailAndPassword(this.loginEmail, this.loginPassword).then(userCredential => {
+                 login() {
+                     auth.signInWithEmailAndPassword(this.loginEmail, this.loginPassword).then(userCredential => {
                         this.user = userCredential.user;
                         this.isGuest = false;
                         this.checkAdmin();
                         this.fetchPosts();
-                    });
+                     });
                 },
                 checkAdmin() {
                     console.log("checkAdmin called", this.user);
                     const adminEmail = "admin@admin.com";
                     console.log("User email", this.user.email);
                     this.isAdmin = this.user.email === adminEmail;
-                     console.log("isAdmin value:", this.isAdmin);
+                    console.log("isAdmin value:", this.isAdmin);
                 },
-                   loginAnonymously() {
+                 loginAnonymously() {
                     auth.signInAnonymously().then(() => {
                         this.user = auth.currentUser;
                         this.isGuest = true;
@@ -185,15 +185,16 @@
                         this.user = userCredential.user;
                            this.isGuest = false;
                            const adminEmail = "admin@admin.com";
-                           if(this.user.email === adminEmail){
-                             database.ref('users/' + this.user.uid).set({
-                                admin: true,
-                            });
-                           } else {
-                             database.ref('users/' + this.user.uid).set({
-                                 admin: false,
-                            });
-                           }
+                            if(this.user.email === adminEmail){
+                              database.ref('users/' + this.user.uid).set({
+                                 admin: true,
+                             });
+                            } else {
+                               database.ref('users/' + this.user.uid).set({
+                                admin: false,
+                           });
+                         }
+
                         this.fetchPosts();
                     });
                 },
@@ -208,9 +209,9 @@
                     });
                 },
                  addPost() {
-                    console.log("addPost() called");
+                     console.log("addPost() called");
                     if (this.newPostTitle && this.newPostContent) {
-                        console.log("Adding Post")
+                         console.log("Adding Post")
                         const postData = {
                             title: this.newPostTitle,
                             content: this.newPostContent,
@@ -218,21 +219,21 @@
                             authorName: this.user.email,
                             timestamp: firebase.database.ServerValue.TIMESTAMP,
                             replies: [],
-                        };
-                            console.log("postData:", postData);
-                            console.log("User info:", this.user)
+                         };
+                         console.log("postData:", postData);
+                            console.log("User info:", this.user);
                             database.ref('posts').push(postData).then(() => {
-                            console.log("Post added to Firebase");
+                             console.log("Post added to Firebase");
                             this.newPostTitle = '';
-                            this.newPostContent = '';
+                             this.newPostContent = '';
                             this.fetchPosts();
                         }).catch(error => {
-                            console.error("Error adding post: ", error);
+                           console.error("Error adding post: ", error);
                         });
                     } else {
-                        console.log("Please fill in all required fields");
+                         console.log("Please fill in all required fields");
                         alert("Please fill in both title and content.");
-                    }
+                     }
                 },
                 editPost(postId) {
                    this.editingPostId = postId;
