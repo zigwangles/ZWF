@@ -1,6 +1,12 @@
 // Firebase configuration - Replace with your config
 const firebaseConfig = {
-    // Your Firebase config object
+  apiKey: "AIzaSyA-haa3-HOFU9xaZ4OOViuJ5ZaPfhEHrMM",
+  authDomain: "zwf-forums.firebaseapp.com",
+  projectId: "zwf-forums",
+  storageBucket: "zwf-forums.firebasestorage.app",
+  messagingSenderId: "530467664249",
+  appId: "1:530467664249:web:4bc68a0e1c1de83b7c7fa8",
+  measurementId: "G-MZ4G3PB7NN"
 };
 
 // Initialize Firebase
@@ -9,7 +15,7 @@ const db = firebase.firestore();
 const md = new Remarkable();
 
 // Admin access configuration
-const ADMIN_ACCESS_CODE = "your-secret-code-here"; // Change this to your desired access code
+const ADMIN_ACCESS_CODE = "jeephehe"; // Change this to your desired access code
 
 // Event Listeners
 document.getElementById('adminAccess').addEventListener('input', function(e) {
