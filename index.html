@@ -113,20 +113,25 @@
 
     <script>
        
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyA-haa3-HOFU9xaZ4OOViuJ5ZaPfhEHrMM",
-            authDomain: "zwf-forums.firebaseapp.com",
-            projectId: "zwf-forums",
-            storageBucket: "zwf-forums.firebasestorage.app",
-            messagingSenderId: "530467664249",
-            appId: "1:530467664249:web:4bc68a0e1c1de83b7c7fa8"
-        };
+     document.addEventListener('DOMContentLoaded', function() {
+    // Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyA-haa3-HOFU9xaZ4OOViuJ5ZaPfhEHrMM",
+        authDomain: "zwf-forums.firebaseapp.com",
+        projectId: "zwf-forums",
+        storageBucket: "zwf-forums.firebasestorage.app",
+        messagingSenderId: "530467664249",
+        appId: "1:530467664249:web:4bc68a0e1c1de83b7c7fa8"
+    };
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // Make these available globally
+    window.db = db;
+    window.auth = auth;
 
         // Auth state observer
         auth.onAuthStateChanged((user) => {
