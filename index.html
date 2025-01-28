@@ -17,7 +17,7 @@
         <div v-if="!user" class="flex justify-center">
             <div class="card bg-base-100 shadow-xl w-full max-w-md">
                 <div class="card-body">
-                    <h2 class="card-title text-2xl font-bold mb-4 text-center">Discord Reporting System</h2>
+                    <h2 class="card-title text-2xl font-bold mb-4 text-center">ZWF Forums</h2>
                     <div v-if="showLoginForm">
                         <div class="form-control mb-4">
                             <label for="loginEmail" class="label">Email</label>
@@ -58,7 +58,7 @@
         <div v-else>
             <div class="navbar bg-base-100 shadow-lg mb-6">
                 <div class="flex-1">
-                    <h1 class="text-2xl font-bold">ZWF/h1>
+                    <h1 class="text-2xl font-bold">ZWF</h1>
                 </div>
                 <div class="flex-none">
                     <button @click="logout" class="btn btn-primary">
@@ -66,59 +66,63 @@
                     </button>
                 </div>
             </div>
-            <div class="card bg-base-100 shadow-xl mb-6" v-if="!isGuest">
+             <div class="card bg-base-100 shadow-xl mb-6" v-if="isAdmin">
                 <div class="card-body">
-                    <h2 class="text-lg font-bold mb-4">Report a Discord Account</h2>
+                    <h2 class="text-lg font-bold mb-4">Create New Post</h2>
                     <div class="form-control mb-4">
-                        <label for="discordUsername" class="label">Discord Username</label>
-                        <input type="text" id="discordUsername" v-model="discordUsername" class="input input-bordered" placeholder="Enter Discord Tag">
-                    </div>
-                    <div class="form-control mb-4">
-                        <label for="reportReason" class="label">Reason for Report</label>
-                        <select v-model="reportReason" class="select select-bordered">
-                            <option disabled value="">Select Reason</option>
-                            <option>Scamming</option>
-                            <option>Bad Behavior</option>
-                            <option>Racism</option>
-                            <option>Other</option>
-                        </select>
-                    </div>
-                    <div class="form-control mb-4" v-show="reportReason === 'Other'">
-                        <label for="otherReason" class="label">Other Reason</label>
-                        <input type="text" id="otherReason" v-model="otherReason" class="input input-bordered">
+                        <label for="postTitle" class="label">Post Title</label>
+                        <input type="text" id="postTitle" v-model="newPostTitle" class="input input-bordered" placeholder="Enter Post Title">
                     </div>
                     <div class="form-control mb-4">
-                        <label for="additionalInfo" class="label">Additional Information</label>
-                        <textarea id="additionalInfo" v-model="additionalInfo" class="textarea textarea-bordered" placeholder="Add any additional details"></textarea>
+                        <label for="postContent" class="label">Post Content</label>
+                        <textarea id="postContent" v-model="newPostContent" class="textarea textarea-bordered" placeholder="Enter Post Content"></textarea>
                     </div>
-                    <button @click="submitReport" class="btn btn-primary">
-                        <span class="material-icons">report</span> Submit Report
+                    <button @click="addPost" class="btn btn-primary">
+                        <span class="material-icons">add</span> Add Post
                     </button>
                 </div>
             </div>
-            <div class="card bg-base-100 shadow-xl mb-6">
+            <div class="card bg-base-100 shadow-xl">
                 <div class="card-body">
-                    <h2 class="text-lg font-bold mb-4">Search for Accounts</h2>
-                    <div class="form-control mb-4 flex">
-                        <label for="searchUsername" class="label">Search Discord Username</label>
-                        <input type="text" id="searchUsername" v-model="searchUsername" class="input input-bordered" placeholder="Search Username">
-                        <button @click="searchReports" class="btn btn-secondary ml-2">Search</button>
+                <h2 class="text-lg font-bold mb-4">Forum Posts</h2>
+                    <div v-if="posts.length === 0" class="text-center">No posts yet.</div>
+                    <div v-for="post in posts" :key="post.id" class="mb-6 border-b pb-4">
+                        <h3 class="text-xl font-semibold">{{ post.title }}</h3>
+                        <p class="text-gray-700 mb-2"> {{ post.content }}</p>
+                        <p class="text-sm text-gray-500">
+                           Posted by: {{ post.authorName }} at {{ new Date(post.timestamp).toLocaleString() }}
+                         </p>
+
+                         <div v-if="isAdmin">
+                             <button @click="editPost(post.id)" class="btn btn-sm btn-secondary mt-2 mr-2">Edit</button>
+                             <button @click="deletePost(post.id)" class="btn btn-sm btn-error mt-2">Delete</button>
+                         </div>
+
+                         <div class="mt-4" v-if="!isGuest">
+                                <div class="form-control mb-2">
+                                    <label for="replyContent" class="label">Reply to Post</label>
+                                    <input type="text" id="replyContent" v-model="replyContent" class="input input-bordered" placeholder="Reply to Post">
+                                </div>
+                             <button @click="addReply(post.id)" class="btn btn-sm btn-primary mb-2">
+                                 <span class="material-icons">reply</span> Reply
+                             </button>
+
+                         </div>
+
+                            <ul class="ml-4 mt-2">
+                            <li v-for="reply in post.replies" :key="reply.id" class="text-gray-600">
+                              {{ reply.content}}
+                                <p class="text-xs text-gray-500">
+                                  Replied by: {{ reply.authorName }} at {{ new Date(reply.timestamp).toLocaleString() }}
+                                </p>
+                              </li>
+                        </ul>
                     </div>
-                    <h2 class="text-lg font-bold mb-4">Reported Accounts</h2>
-                    <div v-if="filteredReports.length === 0" class="text-center">No reports found.</div>
-                    <ul>
-                        <li v-for="(reportGroup, username) in groupedReports" :key="username" class="border-b py-2">
-                            <strong>{{ username }}</strong>
-                            <ul>
-                                <li v-for="report in reportGroup" :key="report.id">
-                                    {{ report.reason }} - {{ report.additionalInfo }}
-                                    <button v-if="isAdmin" @click="deleteReport(report.id)" class="btn btn-sm btn-danger ml-2">Delete</button>
-                                </li>
-                            </ul>
-                        </li>
-                    </ul>
                 </div>
             </div>
+         <div v-if="isGuest">
+             <p class="text-center">Please login to reply to a post.</p>
+         </div>
         </div>
     </div>
     <script>
@@ -144,15 +148,14 @@
                 loginPassword: '',
                 signupEmail: '',
                 signupPassword: '',
-                discordUsername: '',
-                reportReason: '',
-                otherReason: '',
-                additionalInfo: '',
-                searchUsername: '',
-                reports: [],
-                filteredReports: [],
+                newPostTitle: '',
+                newPostContent: '',
+                posts: [],
                 isGuest: false,
-                groupedReports: {}
+                editingPostId: null,
+                replyContent: "",
+            },
+              computed: {
             },
             methods: {
                 login() {
@@ -160,25 +163,25 @@
                         this.user = userCredential.user;
                         this.isGuest = false;
                         this.checkAdmin();
-                        this.fetchReports();
+                        this.fetchPosts();
                     });
                 },
                 checkAdmin() {
-                    const adminEmail = "admin@admin.com"; // Admin email address
+                   const adminEmail = "admin@admin.com"; // Admin email address
                     this.isAdmin = this.user.email === adminEmail;
                 },
-                loginAnonymously() {
+                   loginAnonymously() {
                     auth.signInAnonymously().then(() => {
                         this.user = auth.currentUser;
                         this.isGuest = true;
-                        this.fetchReports();
+                        this.fetchPosts();
                     });
                 },
                 signup() {
                     auth.createUserWithEmailAndPassword(this.signupEmail, this.signupPassword).then(userCredential => {
                         this.user = userCredential.user;
-                        this.isGuest = false;
-                        this.fetchReports();
+                           this.isGuest = false;
+                        this.fetchPosts();
                     });
                 },
                 toggleForm() {
@@ -187,72 +190,105 @@
                 logout() {
                     auth.signOut().then(() => {
                         this.user = null;
-                        this.reports = [];
-                        this.filteredReports = [];
-                        this.isGuest = false;
+                        this.posts = [];
+                         this.isGuest = false;
                     });
                 },
-                submitReport() {
-                    const reportData = {
-                        discordUsername: this.discordUsername,
-                        reason: this.reportReason === 'Other' ? this.otherReason : this.reportReason,
-                        additionalInfo: this.additionalInfo,
-                        uid: this.user ? this.user.uid : null
-                    };
-                    if (reportData.discordUsername && reportData.reason) {
-                        database.ref('reports').push(reportData).then(() => {
-                            this.fetchReports();
-                            this.resetForm();
+                 addPost() {
+                    if (this.newPostTitle && this.newPostContent) {
+                        const postData = {
+                            title: this.newPostTitle,
+                            content: this.newPostContent,
+                            author: this.user.uid,
+                            authorName: this.user.email,
+                            timestamp: firebase.database.ServerValue.TIMESTAMP,
+                            replies: [],
+                        };
+                            database.ref('posts').push(postData).then(() => {
+                            this.newPostTitle = '';
+                            this.newPostContent = '';
+                            this.fetchPosts();
                         }).catch(error => {
-                            console.error("Error submitting report: ", error);
+                            console.error("Error adding post: ", error);
                         });
                     } else {
-                        alert("Please fill in all required fields.");
+                        alert("Please fill in both title and content.");
                     }
                 },
-                fetchReports() {
-                    database.ref('reports').once('value').then(snapshot => {
-                        this.reports = [];
-                        snapshot.forEach(childSnapshot => {
-                            this.reports.push({ id: childSnapshot.key, ...childSnapshot.val() });
-                        });
-                        this.groupReports();
-                    });
-                },
-                resetForm() {
-                    this.discordUsername = '';
-                    this.reportReason = '';
-                    this.otherReason = '';
-                    this.additionalInfo = '';
-                },
-                searchReports() {
-                    this.filteredReports = this.reports.filter(report => report.discordUsername.toLowerCase().includes(this.searchUsername.toLowerCase()));
-                    this.groupReports();
-                },
-                deleteReport(reportId) {
-                    database.ref('reports/' + reportId).remove().then(() => {
-                        this.fetchReports();
-                    }).catch(error => {
-                        console.error("Error deleting report: ", error);
-                    });
-                },
-                groupReports() {
-                    this.groupedReports = {};
-                    this.reports.forEach(report => {
-                        if (!this.groupedReports[report.discordUsername]) {
-                            this.groupedReports[report.discordUsername] = [];
+                editPost(postId) {
+                   this.editingPostId = postId;
+                   const post = this.posts.find(post => post.id === postId);
+                    if(post) {
+                        this.newPostTitle = post.title;
+                        this.newPostContent = post.content;
+                         if(confirm("Do you want to edit this post?")){
+                           const postData = {
+                            title: this.newPostTitle,
+                            content: this.newPostContent,
+                             author: this.user.uid,
+                                  authorName: this.user.email,
+                            timestamp: firebase.database.ServerValue.TIMESTAMP
+                           };
+                            database.ref('posts/' + postId).update(postData).then(() => {
+                             this.editingPostId = null;
+                             this.newPostTitle = '';
+                             this.newPostContent = '';
+                              this.fetchPosts();
+                           }).catch(error => {
+                               console.error("Error editing post:", error);
+                           });
+
                         }
-                        this.groupedReports[report.discordUsername].push(report);
+                      }
+
+                },
+                deletePost(postId) {
+                    if (confirm("Are you sure you want to delete this post?")) {
+                        database.ref('posts/' + postId).remove().then(() => {
+                            this.fetchPosts();
+                        }).catch(error => {
+                            console.error("Error deleting post: ", error);
+                        });
+                    }
+                },
+                fetchPosts() {
+                    database.ref('posts').orderByChild('timestamp').once('value').then(snapshot => {
+                        this.posts = [];
+                        snapshot.forEach(childSnapshot => {
+                            const post = childSnapshot.val();
+                            const replies = post.replies ? Object.values(post.replies).sort((a, b) => a.timestamp - b.timestamp) : [];
+                            this.posts.push({ id: childSnapshot.key, ...post, replies: replies });
+                        });
                     });
-                }
+                },
+                addReply(postId) {
+                    if (!this.replyContent){
+                        alert('Reply cannot be empty');
+                        return;
+                    }
+
+                    const replyData = {
+                        content: this.replyContent,
+                        author: this.user.uid,
+                        authorName: this.user.email,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    };
+
+                    database.ref(`posts/${postId}/replies`).push(replyData).then(() => {
+                        this.replyContent = "";
+                        this.fetchPosts();
+                    }).catch(error => {
+                        console.error('Error adding reply: ', error);
+                    })
+                },
             },
             created() {
                 auth.onAuthStateChanged(user => {
                     this.user = user;
-                    if (user) {
-                        this.isGuest = user.isAnonymous;
+                   if(user) {
+                       this.isGuest = user.isAnonymous;
                         this.checkAdmin();
-                        this.fetchReports();
+                        this.fetchPosts();
                     }
                 });
             }
