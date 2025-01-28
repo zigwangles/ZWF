@@ -159,9 +159,19 @@
             },
             methods: {
                  login() {
-                     auth.signInWithEmailAndPassword(this.loginEmail, this.loginPassword).then(userCredential => {
+                    auth.signInWithEmailAndPassword(this.loginEmail, this.loginPassword).then(userCredential => {
                         this.user = userCredential.user;
                         this.isGuest = false;
+                         const adminEmail = "admin@admin.com";
+                            if(this.user.email === adminEmail){
+                                database.ref('users/' + this.user.uid).set({
+                                 admin: true,
+                                });
+                             } else {
+                                database.ref('users/' + this.user.uid).set({
+                                    admin: false,
+                                 });
+                             }
                         this.checkAdmin();
                         this.fetchPosts();
                      });
@@ -194,7 +204,6 @@
                                 admin: false,
                            });
                          }
-
                         this.fetchPosts();
                     });
                 },
