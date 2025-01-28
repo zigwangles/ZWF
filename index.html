@@ -190,11 +190,10 @@
                         this.fetchPosts();
                     });
                 },
-                 signup() {
+                 async signup() {
                    console.log("signup method called")
-                   auth.signOut().then(() =>{
+                   await auth.signOut()
                        auth.createUserWithEmailAndPassword(this.signupEmail, this.signupPassword).then(userCredential => {
-                        console.log("User created: ", userCredential.user)
                         this.user = userCredential.user;
                         this.isGuest = false;
                            const adminEmail = "admin@admin.com";
@@ -207,12 +206,10 @@
                                 admin: false,
                            });
                          }
-
                         this.fetchPosts();
                        }).catch(error =>{
                          console.log("Error signing up: ", error);
                        });
-                   });
                 },
                 toggleForm() {
                     this.showLoginForm = !this.showLoginForm;
