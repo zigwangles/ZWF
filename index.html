@@ -17,12 +17,31 @@
             <div class="flex justify-between items-center py-4">
                 <h1 class="text-2xl font-bold">Tutorial Forum</h1>
                 <div class="flex items-center space-x-4">
-                    <input type="text" id="adminAccess" placeholder="Search tutorials..." 
-                           class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button id="loginBtn" onclick="showLoginForm()" 
+                            class="text-blue-500 hover:text-blue-600">Admin Login</button>
+                    <button id="logoutBtn" onclick="logout()" 
+                            class="hidden text-red-500 hover:text-red-600">Logout</button>
                 </div>
             </div>
         </div>
     </nav>
+
+    <!-- Login Form -->
+    <div id="loginForm" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <h2 class="text-xl font-bold mb-4">Admin Login</h2>
+            <input type="email" id="emailInput" placeholder="Email" 
+                   class="w-full px-4 py-2 border rounded-lg mb-4">
+            <input type="password" id="passwordInput" placeholder="Password" 
+                   class="w-full px-4 py-2 border rounded-lg mb-4">
+            <div class="flex justify-end space-x-2">
+                <button onclick="hideLoginForm()" 
+                        class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                <button onclick="login()" 
+                        class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Login</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Content -->
     <main class="max-w-6xl mx-auto mt-8 px-4">
@@ -95,7 +114,12 @@
     <script>
         // Firebase configuration
         const firebaseConfig = {
-            // Your Firebase config here
+            apiKey: "AIzaSyA-haa3-HOFU9xaZ4OOViuJ5ZaPfhEHrMM",
+            authDomain: "zwf-forums.firebaseapp.com",
+            projectId: "zwf-forums",
+            storageBucket: "zwf-forums.firebasestorage.app",
+            messagingSenderId: "530467664249",
+            appId: "1:530467664249:web:4bc68a0e1c1de83b7c7fa8"
         };
 
         // Initialize Firebase
@@ -103,19 +127,49 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // Admin access code - replace with your desired access code
-        const ADMIN_ACCESS_CODE = 'your-secret-code-here';
-
-        // Check for admin access
-        document.getElementById('adminAccess').addEventListener('input', function(e) {
-            if (e.target.value === ADMIN_ACCESS_CODE) {
+        // Auth state observer
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                document.getElementById('loginBtn').classList.add('hidden');
+                document.getElementById('logoutBtn').classList.remove('hidden');
                 document.getElementById('adminPanel').classList.remove('hidden');
                 loadCategories();
                 loadTutorials();
             } else {
+                document.getElementById('loginBtn').classList.remove('hidden');
+                document.getElementById('logoutBtn').classList.add('hidden');
                 document.getElementById('adminPanel').classList.add('hidden');
             }
         });
+
+        // Login functions
+        function showLoginForm() {
+            document.getElementById('loginForm').classList.remove('hidden');
+        }
+
+        function hideLoginForm() {
+            document.getElementById('loginForm').classList.add('hidden');
+        }
+
+        async function login() {
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                hideLoginForm();
+            } catch (error) {
+                alert('Login failed: ' + error.message);
+            }
+        }
+
+        async function logout() {
+            try {
+                await auth.signOut();
+            } catch (error) {
+                alert('Logout failed: ' + error.message);
+            }
+        }
 
         // Handle MD file import
         function handleFileSelect(event) {
@@ -307,62 +361,3 @@
                 const tutorialElement = document.querySelector(`[data-tutorial-id="${tutorialId}"]`);
                 const editForm = document.createElement('div');
                 editForm.className = 'bg-white rounded-lg shadow p-4 space-y-4';
-                editForm.innerHTML = `
-                    <input type="text" value="${tutorial.title}" 
-                           class="w-full px-4 py-2 border rounded-lg" id="editTitle-${tutorialId}">
-                    <textarea class="w-full px-4 py-2 border rounded-lg h-64 font-mono" 
-                              id="editContent-${tutorialId}">${tutorial.content}</textarea>
-                    <div class="flex justify-end space-x-2">
-                        <button onclick="cancelEdit('${tutorialId}')" 
-                                class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
-                            Cancel
-                        </button>
-                        <button onclick="updateTutorial('${tutorialId}')" 
-                                class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
-                            Update
-                        </button>
-                    </div>
-                `;
-
-                tutorialElement.replaceWith(editForm);
-            } catch (error) {
-                console.error('Error loading tutorial for edit:', error);
-                alert('Error loading tutorial for edit: ' + error.message);
-            }
-        }
-
-        // Cancel edit
-        async function cancelEdit(tutorialId) {
-            loadTutorials();
-        }
-
-        // Update tutorial
-        async function updateTutorial(tutorialId) {
-            const title = document.getElementById(`editTitle-${tutorialId}`).value;
-            const content = document.getElementById(`editContent-${tutorialId}`).value;
-
-            if (!title || !content) {
-                alert('Please fill in all fields');
-                return;
-            }
-
-            try {
-                await db.collection('tutorials').doc(tutorialId).update({
-                    title: title,
-                    content: content,
-                    updated: firebase.firestore.FieldValue.serverTimestamp()
-                });
-
-                loadTutorials();
-                alert('Tutorial updated successfully!');
-            } catch (error) {
-                console.error('Error updating tutorial:', error);
-                alert('Error updating tutorial: ' + error.message);
-            }
-        }
-
-        // Initial load
-        loadCategories();
-    </script>
-</body>
-</html>
