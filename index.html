@@ -39,7 +39,16 @@
     <div id="adminPanel" class="hidden bg-white shadow-md rounded p-4 mb-4">
       <h2 class="text-xl font-bold mb-4">Admin Panel</h2>
       
-        <!-- Category Creation -->
+      <!-- Login Form -->
+        <div id="adminLoginForm" class="mb-4">
+            <h3 class="text-lg font-bold mb-2">Admin Login</h3>
+            <input type="email" id="adminEmail" placeholder="Email" class="mb-2 border px-3 py-1 rounded text-black"/>
+            <input type="password" id="adminPassword" placeholder="Password" class="mb-2 border px-3 py-1 rounded text-black"/>
+            <button id="adminLoginButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Login</button>
+           <p id="loginError" class="text-red-500 mt-2 hidden">Incorrect Email/Password Combination.</p>
+         </div>
+     <div id="adminPanelContent" class="hidden">
+         <!-- Category Creation -->
         <h3 class="text-lg font-bold mb-2">Create Category</h3>
         <input type="text" id="newCategoryName" placeholder="Category Name" class="mb-2 border px-3 py-1 rounded text-black"/>
         <button id="addCategoryButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Category</button>
@@ -67,6 +76,7 @@
         <button id="updateTutorialButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">Update Tutorial</button>
         <button id="deleteTutorialButton" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Delete Tutorial</button>
         </div>
+      </div>
     </div>
 
     <div id="forumContainer" class="grid grid-cols-1 md:grid-cols-3 gap-4">
