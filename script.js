@@ -1,237 +1,209 @@
-// GitHub configuration
-const GITHUB_TOKEN = process.env.ZWF_TOKEN; // Using the ZWF_Token environment variable
-const REPO_OWNER = 'zigwangles';
-const REPO_NAME = 'ZWF';
-const ADMIN_KEY = 'rimurutempest123!'; // Change this to your desired admin key
+// Firebase configuration - Replace with your config
+const firebaseConfig = {
+    // Your Firebase config object
+};
 
-// GitHub API endpoints
-const GITHUB_API = 'https://api.github.com';
-const REPO_URL = `${GITHUB_API}/repos/${REPO_OWNER}/${REPO_NAME}`;
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const md = new Remarkable();
 
-// State management
-let categories = [];
-let tutorials = [];
+// Admin access configuration
+const ADMIN_ACCESS_CODE = "your-secret-code-here"; // Change this to your desired access code
 
-// Initialize the application
-async function init() {
-    if (!process.env.ZWF_TOKEN) {
-        console.error('GitHub token (ZWF_TOKEN) is not set in environment variables');
-        return;
+// Event Listeners
+document.getElementById('adminAccess').addEventListener('input', function(e) {
+    if (e.target.value === ADMIN_ACCESS_CODE) {
+        document.getElementById('adminPanel').classList.remove('hidden');
+    } else {
+        document.getElementById('adminPanel').classList.add('hidden');
     }
-    await loadCategories();
-    await loadTutorials();
-    setupEventListeners();
+});
+
+// Categories Management
+async function createCategory() {
+    const categoryName = document.getElementById('newCategoryName').value;
+    if (!categoryName) return;
+
+    try {
+        await db.collection('categories').add({
+            name: categoryName,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById('newCategoryName').value = '';
+        loadCategories();
+    } catch (error) {
+        console.error("Error creating category:", error);
+    }
 }
 
-// Load categories from GitHub
 async function loadCategories() {
-    try {
-        const response = await fetch(`${REPO_URL}/contents/categories.json`, {
-            headers: {
-                'Authorization': `token ${process.env.ZWF_TOKEN}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            categories = JSON.parse(atob(data.content));
-            renderCategories();
-        }
-    } catch (error) {
-        console.error('Error loading categories:', error);
-    }
-}
-
-// Load tutorials from GitHub
-async function loadTutorials() {
-    try {
-        const response = await fetch(`${REPO_URL}/contents/tutorials`, {
-            headers: {
-                'Authorization': `token ${process.env.ZWF_TOKEN}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        });
-        
-        if (response.ok) {
-            const files = await response.json();
-            tutorials = await Promise.all(
-                files.map(async file => {
-                    const content = await fetch(file.download_url).then(res => res.text());
-                    return {
-                        name: file.name,
-                        content: content,
-                        category: file.name.split('-')[0]
-                    };
-                })
-            );
-            renderTutorials();
-        }
-    } catch (error) {
-        console.error('Error loading tutorials:', error);
-    }
-}
-
-// Render categories in the sidebar
-function renderCategories() {
     const categoriesList = document.getElementById('categoriesList');
-    categoriesList.innerHTML = categories.map(category => `
-        <div class="category-item" onclick="filterTutorials('${category}')">
-            ${category}
-        </div>
-    `).join('');
-
-    // Update category dropdowns in admin panel
-    const categorySelects = document.querySelectorAll('select[id$="Category"]');
-    categorySelects.forEach(select => {
-        select.innerHTML = categories.map(category => `
-            <option value="${category}">${category}</option>
-        `).join('');
-    });
-}
-
-// Render tutorials in the grid
-function renderTutorials(filteredTutorials = tutorials) {
-    const tutorialsGrid = document.getElementById('tutorialsGrid');
-    tutorialsGrid.innerHTML = filteredTutorials.map(tutorial => `
-        <div class="tutorial-card">
-            <h3>${tutorial.name.replace('.md', '').split('-').slice(1).join(' ')}</h3>
-            <p>${tutorial.content.slice(0, 150)}...</p>
-            <button onclick="viewTutorial('${tutorial.name}')">Read More</button>
-        </div>
-    `).join('');
-}
-
-// Filter tutorials by category
-function filterTutorials(category) {
-    const filtered = tutorials.filter(tutorial => tutorial.category === category);
-    renderTutorials(filtered);
-}
-
-// View full tutorial
-function viewTutorial(tutorialName) {
-    const tutorial = tutorials.find(t => t.name === tutorialName);
-    if (tutorial) {
-        const content = marked(tutorial.content);
-        // Show tutorial in a modal or new page
-        // Implementation depends on your preferred UI
-    }
-}
-
-// Admin panel functions
-function handleCategory() {
-    const categoryName = document.getElementById('categoryName').value;
-    if (categoryName) {
-        categories.push(categoryName);
-        updateCategoriesFile();
-    }
-}
-
-function handleTutorial() {
-    const title = document.getElementById('tutorialTitle').value;
-    const category = document.getElementById('tutorialCategory').value;
-    const content = document.getElementById('tutorialContent').value;
+    const categorySelect = document.getElementById('categorySelect');
     
-    if (title && category && content) {
-        const fileName = `${category}-${title.toLowerCase().replace(/\s+/g, '-')}.md`;
-        createTutorialFile(fileName, content);
-    }
-}
-
-async function deleteTutorial() {
-    const tutorialName = document.getElementById('tutorialToDelete').value;
-    if (tutorialName) {
-        await deleteTutorialFile(tutorialName);
-    }
-}
-
-// GitHub API functions
-async function updateCategoriesFile() {
     try {
-        const content = btoa(JSON.stringify(categories));
-        await fetch(`${REPO_URL}/contents/categories.json`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `token ${process.env.ZWF_TOKEN}`,
-                'Accept': 'application/vnd.github.v3+json'
-            },
-            body: JSON.stringify({
-                message: 'Update categories',
-                content: content,
-                sha: await getFileSha('categories.json')
-            })
+        const snapshot = await db.collection('categories').orderBy('name').get();
+        
+        // Clear existing categories
+        categoriesList.innerHTML = '';
+        categorySelect.innerHTML = '';
+        
+        snapshot.forEach(doc => {
+            // Add to categories grid
+            const categoryCard = document.createElement('div');
+            categoryCard.className = 'category-card';
+            categoryCard.innerHTML = `
+                <h3>${doc.data().name}</h3>
+            `;
+            categoryCard.onclick = () => loadTutorialsByCategory(doc.id);
+            categoriesList.appendChild(categoryCard);
+
+            // Add to select dropdown in admin panel
+            const option = document.createElement('option');
+            option.value = doc.id;
+            option.textContent = doc.data().name;
+            categorySelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error("Error loading categories:", error);
+    }
+}
+
+// Tutorials Management
+async function createTutorial() {
+    const categoryId = document.getElementById('categorySelect').value;
+    const title = document.getElementById('tutorialTitle').value;
+    const content = document.getElementById('tutorialContent').value;
+
+    if (!categoryId || !title || !content) return;
+
+    try {
+        await db.collection('tutorials').add({
+            categoryId,
+            title,
+            content,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
         
-        await loadCategories();
+        document.getElementById('tutorialTitle').value = '';
+        document.getElementById('tutorialContent').value = '';
+        loadTutorialsByCategory(categoryId);
     } catch (error) {
-        console.error('Error updating categories:', error);
+        console.error("Error creating tutorial:", error);
     }
 }
 
-async function createTutorialFile(fileName, content) {
+async function loadTutorialsByCategory(categoryId) {
+    const tutorialsList = document.getElementById('tutorialsList');
+    
     try {
-        await fetch(`${REPO_URL}/contents/tutorials/${fileName}`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `token ${process.env.ZWF_TOKEN}`,
-                'Accept': 'application/vnd.github.v3+json'
-            },
-            body: JSON.stringify({
-                message: 'Create tutorial',
-                content: btoa(content)
-            })
+        const snapshot = await db.collection('tutorials')
+            .where('categoryId', '==', categoryId)
+            .orderBy('timestamp', 'desc')
+            .get();
+        
+        tutorialsList.innerHTML = '';
+        
+        snapshot.forEach(doc => {
+            const tutorialCard = document.createElement('div');
+            tutorialCard.className = 'tutorial-card';
+            tutorialCard.innerHTML = `
+                <h3>${doc.data().title}</h3>
+                <button onclick="viewTutorial('${doc.id}')">Read</button>
+                ${isAdmin() ? `
+                    <button onclick="editTutorial('${doc.id}')">Edit</button>
+                    <button onclick="deleteTutorial('${doc.id}')">Delete</button>
+                ` : ''}
+            `;
+            tutorialsList.appendChild(tutorialCard);
+        });
+    } catch (error) {
+        console.error("Error loading tutorials:", error);
+    }
+}
+
+async function viewTutorial(tutorialId) {
+    try {
+        const doc = await db.collection('tutorials').doc(tutorialId).get();
+        const tutorial = doc.data();
+        
+        const modal = document.getElementById('tutorialModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalContent = document.getElementById('modalContent');
+        
+        modalTitle.textContent = tutorial.title;
+        modalContent.innerHTML = md.render(tutorial.content);
+        modal.style.display = 'block';
+    } catch (error) {
+        console.error("Error viewing tutorial:", error);
+    }
+}
+
+async function editTutorial(tutorialId) {
+    try {
+        const doc = await db.collection('tutorials').doc(tutorialId).get();
+        const tutorial = doc.data();
+        
+        document.getElementById('tutorialTitle').value = tutorial.title;
+        document.getElementById('tutorialContent').value = tutorial.content;
+        document.getElementById('categorySelect').value = tutorial.categoryId;
+        
+        // Add update button
+        const updateButton = document.createElement('button');
+        updateButton.textContent = 'Update Tutorial';
+        updateButton.onclick = async () => {
+            await updateTutorial(tutorialId);
+            updateButton.remove();
+        };
+        document.querySelector('.admin-section').appendChild(updateButton);
+    } catch (error) {
+        console.error("Error editing tutorial:", error);
+    }
+}
+
+async function updateTutorial(tutorialId) {
+    const categoryId = document.getElementById('categorySelect').value;
+    const title = document.getElementById('tutorialTitle').value;
+    const content = document.getElementById('tutorialContent').value;
+
+    try {
+        await db.collection('tutorials').doc(tutorialId).update({
+            categoryId,
+            title,
+            content,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
         
-        await loadTutorials();
+        document.getElementById('tutorialTitle').value = '';
+        document.getElementById('tutorialContent').value = '';
+        loadTutorialsByCategory(categoryId);
     } catch (error) {
-        console.error('Error creating tutorial:', error);
+        console.error("Error updating tutorial:", error);
     }
 }
 
-async function deleteTutorialFile(fileName) {
+async function deleteTutorial(tutorialId) {
+    if (!confirm('Are you sure you want to delete this tutorial?')) return;
+
     try {
-        await fetch(`${REPO_URL}/contents/tutorials/${fileName}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `token ${process.env.ZWF_TOKEN}`,
-                'Accept': 'application/vnd.github.v3+json'
-            },
-            body: JSON.stringify({
-                message: 'Delete tutorial',
-                sha: await getFileSha(`tutorials/${fileName}`)
-            })
-        });
-        
-        await loadTutorials();
+        await db.collection('tutorials').doc(tutorialId).delete();
+        loadTutorialsByCategory(document.getElementById('categorySelect').value);
     } catch (error) {
-        console.error('Error deleting tutorial:', error);
+        console.error("Error deleting tutorial:", error);
     }
 }
 
-async function getFileSha(path) {
-    const response = await fetch(`${REPO_URL}/contents/${path}`, {
-        headers: {
-            'Authorization': `token ${process.env.ZWF_TOKEN}`,
-            'Accept': 'application/vnd.github.v3+json'
-        }
-    });
-    const data = await response.json();
-    return data.sha;
+// Utility Functions
+function isAdmin() {
+    return !document.getElementById('adminPanel').classList.contains('hidden');
 }
 
-// Event listeners
-function setupEventListeners() {
-    const searchInput = document.getElementById('searchInput');
-    searchInput.addEventListener('input', (e) => {
-        const value = e.target.value;
-        if (value === ADMIN_KEY) {
-            document.getElementById('adminPanel').classList.add('active');
-        } else {
-            document.getElementById('adminPanel').classList.remove('active');
-            // Implement tutorial search functionality here
-        }
-    });
-}
-
-// Initialize the application when the page loads
-document.addEventListener('DOMContentLoaded', init);
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    loadCategories();
+    
+    // Modal close button
+    document.querySelector('.close-button').onclick = () => {
+        document.getElementById('tutorialModal').style.display = 'none';
+    };
+});
