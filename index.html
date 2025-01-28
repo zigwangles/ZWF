@@ -167,8 +167,11 @@
                     });
                 },
                 checkAdmin() {
-                   const adminEmail = "admin@admin.com"; // Admin email address
+                    console.log("checkAdmin called", this.user);
+                    const adminEmail = "admin@admin.com";
+                    console.log("User email", this.user.email);
                     this.isAdmin = this.user.email === adminEmail;
+                     console.log("isAdmin value:", this.isAdmin);
                 },
                    loginAnonymously() {
                     auth.signInAnonymously().then(() => {
@@ -181,6 +184,16 @@
                     auth.createUserWithEmailAndPassword(this.signupEmail, this.signupPassword).then(userCredential => {
                         this.user = userCredential.user;
                            this.isGuest = false;
+                           const adminEmail = "admin@admin.com";
+                           if(this.user.email === adminEmail){
+                             database.ref('users/' + this.user.uid).set({
+                                admin: true,
+                            });
+                           } else {
+                             database.ref('users/' + this.user.uid).set({
+                                 admin: false,
+                            });
+                           }
                         this.fetchPosts();
                     });
                 },
@@ -195,7 +208,9 @@
                     });
                 },
                  addPost() {
+                    console.log("addPost() called");
                     if (this.newPostTitle && this.newPostContent) {
+                        console.log("Adding Post")
                         const postData = {
                             title: this.newPostTitle,
                             content: this.newPostContent,
@@ -204,7 +219,10 @@
                             timestamp: firebase.database.ServerValue.TIMESTAMP,
                             replies: [],
                         };
+                            console.log("postData:", postData);
+                            console.log("User info:", this.user)
                             database.ref('posts').push(postData).then(() => {
+                            console.log("Post added to Firebase");
                             this.newPostTitle = '';
                             this.newPostContent = '';
                             this.fetchPosts();
@@ -212,6 +230,7 @@
                             console.error("Error adding post: ", error);
                         });
                     } else {
+                        console.log("Please fill in all required fields");
                         alert("Please fill in both title and content.");
                     }
                 },
@@ -283,13 +302,14 @@
                 },
             },
             created() {
-                auth.onAuthStateChanged(user => {
-                    this.user = user;
-                   if(user) {
-                       this.isGuest = user.isAnonymous;
+                 auth.onAuthStateChanged(user => {
+                     this.user = user;
+                     if(user) {
+                        console.log("User state changed: ", user);
+                        this.isGuest = user.isAnonymous;
                         this.checkAdmin();
                         this.fetchPosts();
-                    }
+                   }
                 });
             }
         });
