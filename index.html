@@ -3,87 +3,366 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Open Tutorial Forum</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    
-    <style>
-        .markdown-body {
-            box-sizing: border-box;
-            min-width: 200px;
-            max-width: 980px;
-            margin: 0 auto;
-            padding: 45px;
-        }
-        @media (max-width: 767px) {
-            .markdown-body {
-                padding: 15px;
-            }
-        }
-    </style>
+    <title>Tutorial Forum</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.2/marked.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-auth-compat.js"></script>
 </head>
 <body class="bg-gray-100">
-
-<header class="bg-gray-800 text-white py-4">
-    <div class="container mx-auto flex justify-between items-center">
-        <h1 class="text-2xl font-bold">Tutorial Forum</h1>
-        <div class="flex items-center">
-        <input type="text" id="searchInput" placeholder="Search tutorials..." class="px-3 py-1 rounded text-black">
-    </div>
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <h1 class="text-2xl font-bold">Tutorial Forum</h1>
+                <div class="flex items-center space-x-4">
+                    <input type="text" id="adminAccess" placeholder="Search tutorials..." 
+                           class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
         </div>
-</header>
-<main class="container mx-auto mt-8">
-    <div id="adminPanel" class="hidden bg-white shadow-md rounded p-4 mb-4">
-      <h2 class="text-xl font-bold mb-4">Admin Panel</h2>
-      
-      <!-- Login Form -->
-        <div id="adminLoginForm" class="mb-4">
-            <h3 class="text-lg font-bold mb-2">Admin Login</h3>
-            <input type="email" id="adminEmail" placeholder="Email" class="mb-2 border px-3 py-1 rounded text-black"/>
-            <input type="password" id="adminPassword" placeholder="Password" class="mb-2 border px-3 py-1 rounded text-black"/>
-            <button id="adminLoginButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Login</button>
-           <p id="loginError" class="text-red-500 mt-2 hidden">Incorrect Email/Password Combination.</p>
-         </div>
-     <div id="adminPanelContent" class="hidden">
-         <!-- Category Creation -->
-        <h3 class="text-lg font-bold mb-2">Create Category</h3>
-        <input type="text" id="newCategoryName" placeholder="Category Name" class="mb-2 border px-3 py-1 rounded text-black"/>
-        <button id="addCategoryButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Category</button>
+    </nav>
 
-        <!-- Upload Tutorial Form -->
-         <h3 class="text-lg font-bold mb-2 mt-4">Upload Tutorial</h3>
-        <input type="text" id="tutorialTitle" placeholder="Tutorial Title" class="mb-2 border px-3 py-1 rounded text-black"/>
-        <select id="tutorialCategory" class="mb-2 border px-3 py-1 rounded text-black">
-                <option value="">Select Category</option>
-         </select>
-        <input type="file" id="markdownFile" accept=".md" class="mb-2"/>
-         <button id="uploadTutorialButton" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-4">Upload Tutorial</button>
-
-           <!-- Edit/Delete Tutorial Form -->
-        <h3 class="text-lg font-bold mb-2 mt-4">Edit/Delete Tutorial</h3>
-        <select id="editTutorialSelect" class="mb-2 border px-3 py-1 rounded text-black">
-                <option value="">Select Tutorial to Edit/Delete</option>
-         </select>
-        <div id="editFormContainer" class="hidden">
-        <input type="text" id="editTutorialTitle" placeholder="Tutorial Title" class="mb-2 border px-3 py-1 rounded text-black"/>
-        <select id="editTutorialCategory" class="mb-2 border px-3 py-1 rounded text-black">
-              <option value="">Select Category</option>
-         </select>
-        <textarea id="editMarkdownContent" rows="10" class="mb-2 border px-3 py-1 rounded text-black w-full"></textarea>
-        <button id="updateTutorialButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">Update Tutorial</button>
-        <button id="deleteTutorialButton" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Delete Tutorial</button>
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto mt-8 px-4">
+        <!-- Categories Grid -->
+        <div id="categoriesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Categories will be dynamically inserted here -->
         </div>
-      </div>
-    </div>
 
-    <div id="forumContainer" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    </div>
-</main>
+        <!-- Admin Panel (hidden by default) -->
+        <div id="adminPanel" class="hidden bg-white rounded-lg shadow-lg p-6 mt-8">
+            <h2 class="text-2xl font-bold mb-6">Admin Panel</h2>
+            
+            <!-- Category Management -->
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-4">Add New Category</h3>
+                <div class="flex space-x-4">
+                    <input type="text" id="newCategoryName" placeholder="Category name" 
+                           class="flex-1 px-4 py-2 border rounded-lg">
+                    <button onclick="addCategory()" 
+                            class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
+                        Add Category
+                    </button>
+                </div>
+            </div>
 
-<script type="module" src="script.js"></script>
+            <!-- Tutorial Management -->
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-4">Add New Tutorial</h3>
+                <div class="space-y-4">
+                    <input type="text" id="tutorialTitle" placeholder="Tutorial title" 
+                           class="w-full px-4 py-2 border rounded-lg">
+                    <select id="tutorialCategory" class="w-full px-4 py-2 border rounded-lg">
+                        <!-- Categories will be dynamically inserted here -->
+                    </select>
+                    <textarea id="tutorialContent" placeholder="Write or paste your markdown content here..." 
+                            class="w-full px-4 py-2 border rounded-lg h-64 font-mono"></textarea>
+                    <div class="flex space-x-4">
+                        <button onclick="uploadTutorial()" 
+                                class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600">
+                            Save Tutorial
+                        </button>
+                        <input type="file" id="mdFileInput" accept=".md" class="hidden" 
+                               onchange="handleFileSelect(event)">
+                        <button onclick="document.getElementById('mdFileInput').click()" 
+                                class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
+                            Import MD File
+                        </button>
+                    </div>
+                </div>
+            </div>
 
+            <!-- Tutorial List -->
+            <div id="tutorialList" class="space-y-4">
+                <!-- Tutorials will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <!-- Tutorial View -->
+        <div id="tutorialView" class="hidden bg-white rounded-lg shadow-lg p-6 mt-8">
+            <button onclick="backToCategories()" 
+                    class="mb-4 text-blue-500 hover:text-blue-600">
+                ← Back to Categories
+            </button>
+            <div id="tutorialContent" class="prose max-w-none">
+                <!-- Tutorial content will be inserted here -->
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            // Your Firebase config here
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // Admin access code - replace with your desired access code
+        const ADMIN_ACCESS_CODE = 'your-secret-code-here';
+
+        // Check for admin access
+        document.getElementById('adminAccess').addEventListener('input', function(e) {
+            if (e.target.value === ADMIN_ACCESS_CODE) {
+                document.getElementById('adminPanel').classList.remove('hidden');
+                loadCategories();
+                loadTutorials();
+            } else {
+                document.getElementById('adminPanel').classList.add('hidden');
+            }
+        });
+
+        // Handle MD file import
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('tutorialContent').value = e.target.result;
+            };
+            reader.readAsText(file);
+        }
+
+        // Add new category
+        async function addCategory() {
+            const categoryName = document.getElementById('newCategoryName').value;
+            if (!categoryName) return;
+
+            try {
+                await db.collection('categories').add({
+                    name: categoryName,
+                    created: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                document.getElementById('newCategoryName').value = '';
+                loadCategories();
+            } catch (error) {
+                console.error('Error adding category:', error);
+                alert('Error adding category: ' + error.message);
+            }
+        }
+
+        // Upload tutorial
+        async function uploadTutorial() {
+            const title = document.getElementById('tutorialTitle').value;
+            const category = document.getElementById('tutorialCategory').value;
+            const content = document.getElementById('tutorialContent').value;
+
+            if (!title || !category || !content) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            try {
+                await db.collection('tutorials').add({
+                    title: title,
+                    category: category,
+                    content: content,
+                    created: firebase.firestore.FieldValue.serverTimestamp(),
+                    updated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Reset form
+                document.getElementById('tutorialTitle').value = '';
+                document.getElementById('tutorialContent').value = '';
+                loadTutorials();
+                alert('Tutorial saved successfully!');
+            } catch (error) {
+                console.error('Error saving tutorial:', error);
+                alert('Error saving tutorial: ' + error.message);
+            }
+        }
+
+        // Load categories
+        async function loadCategories() {
+            const categoriesSnapshot = await db.collection('categories')
+                .orderBy('created', 'desc')
+                .get();
+            
+            const categoriesGrid = document.getElementById('categoriesGrid');
+            const categorySelect = document.getElementById('tutorialCategory');
+            
+            // Clear existing categories
+            categoriesGrid.innerHTML = '';
+            categorySelect.innerHTML = '<option value="">Select a category</option>';
+
+            categoriesSnapshot.forEach(doc => {
+                const category = doc.data();
+
+                // Add to main grid
+                const categoryCard = document.createElement('div');
+                categoryCard.className = 'bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow';
+                categoryCard.innerHTML = `
+                    <h3 class="text-xl font-semibold mb-4">${category.name}</h3>
+                    <button onclick="loadTutorialsForCategory('${doc.id}', '${category.name}')" 
+                            class="text-blue-500 hover:text-blue-600">
+                        View Tutorials
+                    </button>
+                `;
+                categoriesGrid.appendChild(categoryCard);
+
+                // Add to select dropdown
+                const option = document.createElement('option');
+                option.value = doc.id;
+                option.textContent = category.name;
+                categorySelect.appendChild(option);
+            });
+        }
+
+        // Load all tutorials (admin view)
+        async function loadTutorials() {
+            const tutorialsSnapshot = await db.collection('tutorials')
+                .orderBy('created', 'desc')
+                .get();
+            
+            const tutorialList = document.getElementById('tutorialList');
+            tutorialList.innerHTML = '<h3 class="text-xl font-semibold mb-4">Manage Tutorials</h3>';
+
+            tutorialsSnapshot.forEach(doc => {
+                const tutorial = doc.data();
+                const tutorialElement = document.createElement('div');
+                tutorialElement.className = 'bg-white rounded-lg shadow p-4 flex justify-between items-center';
+                tutorialElement.dataset.tutorialId = doc.id;
+                tutorialElement.innerHTML = `
+                    <div>
+                        <h4 class="font-semibold">${tutorial.title}</h4>
+                        <p class="text-sm text-gray-600">Last updated: ${tutorial.updated.toDate().toLocaleDateString()}</p>
+                    </div>
+                    <div class="space-x-2">
+                        <button onclick="editTutorial('${doc.id}')" 
+                                class="text-blue-500 hover:text-blue-600">Edit</button>
+                        <button onclick="deleteTutorial('${doc.id}')" 
+                                class="text-red-500 hover:text-red-600">Delete</button>
+                    </div>
+                `;
+                tutorialList.appendChild(tutorialElement);
+            });
+        }
+
+        // Load tutorials for category
+        async function loadTutorialsForCategory(categoryId, categoryName) {
+            const tutorialsSnapshot = await db.collection('tutorials')
+                .where('category', '==', categoryId)
+                .orderBy('created', 'desc')
+                .get();
+
+            const tutorialView = document.getElementById('tutorialView');
+            const tutorialContent = document.getElementById('tutorialContent');
+            
+            document.getElementById('categoriesGrid').classList.add('hidden');
+            tutorialView.classList.remove('hidden');
+            
+            tutorialContent.innerHTML = `
+                <h2 class="text-2xl font-bold mb-6">${categoryName}</h2>
+                <div class="grid grid-cols-1 gap-6">
+                    ${tutorialsSnapshot.empty ? 
+                        '<p class="text-gray-600">No tutorials in this category yet.</p>' : 
+                        tutorialsSnapshot.docs.map(doc => {
+                            const tutorial = doc.data();
+                            return `
+                                <div class="bg-white rounded-lg shadow-lg p-6">
+                                    <h3 class="text-xl font-semibold mb-4">${tutorial.title}</h3>
+                                    <div class="prose max-w-none">
+                                        ${marked.parse(tutorial.content)}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')
+                    }
+                </div>
+            `;
+        }
+
+        // Back to categories
+        function backToCategories() {
+            document.getElementById('categoriesGrid').classList.remove('hidden');
+            document.getElementById('tutorialView').classList.add('hidden');
+        }
+
+        // Delete tutorial
+        async function deleteTutorial(tutorialId) {
+            if (!confirm('Are you sure you want to delete this tutorial?')) return;
+
+            try {
+                await db.collection('tutorials').doc(tutorialId).delete();
+                loadTutorials();
+                alert('Tutorial deleted successfully!');
+            } catch (error) {
+                console.error('Error deleting tutorial:', error);
+                alert('Error deleting tutorial: ' + error.message);
+            }
+        }
+
+        // Edit tutorial
+        async function editTutorial(tutorialId) {
+            try {
+                const tutorialDoc = await db.collection('tutorials').doc(tutorialId).get();
+                const tutorial = tutorialDoc.data();
+
+                const tutorialElement = document.querySelector(`[data-tutorial-id="${tutorialId}"]`);
+                const editForm = document.createElement('div');
+                editForm.className = 'bg-white rounded-lg shadow p-4 space-y-4';
+                editForm.innerHTML = `
+                    <input type="text" value="${tutorial.title}" 
+                           class="w-full px-4 py-2 border rounded-lg" id="editTitle-${tutorialId}">
+                    <textarea class="w-full px-4 py-2 border rounded-lg h-64 font-mono" 
+                              id="editContent-${tutorialId}">${tutorial.content}</textarea>
+                    <div class="flex justify-end space-x-2">
+                        <button onclick="cancelEdit('${tutorialId}')" 
+                                class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
+                            Cancel
+                        </button>
+                        <button onclick="updateTutorial('${tutorialId}')" 
+                                class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                            Update
+                        </button>
+                    </div>
+                `;
+
+                tutorialElement.replaceWith(editForm);
+            } catch (error) {
+                console.error('Error loading tutorial for edit:', error);
+                alert('Error loading tutorial for edit: ' + error.message);
+            }
+        }
+
+        // Cancel edit
+        async function cancelEdit(tutorialId) {
+            loadTutorials();
+        }
+
+        // Update tutorial
+        async function updateTutorial(tutorialId) {
+            const title = document.getElementById(`editTitle-${tutorialId}`).value;
+            const content = document.getElementById(`editContent-${tutorialId}`).value;
+
+            if (!title || !content) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            try {
+                await db.collection('tutorials').doc(tutorialId).update({
+                    title: title,
+                    content: content,
+                    updated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                loadTutorials();
+                alert('Tutorial updated successfully!');
+            } catch (error) {
+                console.error('Error updating tutorial:', error);
+                alert('Error updating tutorial: ' + error.message);
+            }
+        }
+
+        // Initial load
+        loadCategories();
+    </script>
 </body>
 </html>
