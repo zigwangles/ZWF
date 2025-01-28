@@ -3,68 +3,260 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tutorial Forum</title>
-    <link rel="stylesheet" href="styles.css">
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-auth.js"></script>
-    <script src="https://cdn.jsdelivr.net/remarkable/1.7.1/remarkable.min.js"></script>
+    <title>Discord Reporting System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@2.51.6/dist/full.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
-<body>
-    <header>
-        <nav>
-            <div class="logo">Tutorial Forum</div>
-            <div class="search-container">
-                <input type="text" id="adminAccess" placeholder="Search tutorials..." class="search-input">
-            </div>
-        </nav>
-    </header>
-
-    <main>
-        <div class="container">
-            <div class="categories-section">
-                <h2>Categories</h2>
-                <div id="categoriesList" class="categories-grid"></div>
-            </div>
-
-            <div class="tutorials-section">
-                <h2>Tutorials</h2>
-                <div id="tutorialsList" class="tutorials-grid"></div>
-            </div>
-        </div>
-
-        <!-- Admin Panel (Hidden by default) -->
-        <div id="adminPanel" class="admin-panel hidden">
-            <h2>Admin Panel</h2>
-            
-            <div class="admin-section">
-                <h3>Create New Category</h3>
-                <input type="text" id="newCategoryName" placeholder="Category Name">
-                <button onclick="createCategory()">Create Category</button>
-            </div>
-
-            <div class="admin-section">
-                <h3>Create New Tutorial</h3>
-                <select id="categorySelect"></select>
-                <input type="text" id="tutorialTitle" placeholder="Tutorial Title">
-                <textarea id="tutorialContent" placeholder="Write your tutorial in Markdown"></textarea>
-                <button onclick="createTutorial()">Create Tutorial</button>
-            </div>
-
-            <div class="admin-section">
-                <h3>Manage Tutorials</h3>
-                <div id="adminTutorialsList"></div>
+<body class="bg-base-200">
+    <div id="app" class="container mx-auto my-8">
+        <div v-if="!user" class="flex justify-center">
+            <div class="card bg-base-100 shadow-xl w-full max-w-md">
+                <div class="card-body">
+                    <h2 class="card-title text-2xl font-bold mb-4 text-center">Discord Reporting System</h2>
+                    <div v-if="showLoginForm">
+                        <div class="form-control mb-4">
+                            <label for="loginEmail" class="label">Email</label>
+                            <input type="email" id="loginEmail" v-model="loginEmail" class="input input-bordered">
+                        </div>
+                        <div class="form-control mb-6">
+                            <label for="loginPassword" class="label">Password</label>
+                            <input type="password" id="loginPassword" v-model="loginPassword" class="input input-bordered">
+                        </div>
+                        <button @click="login" class="btn btn-primary btn-block">
+                            <span class="material-icons">login</span> Login
+                        </button>
+                        <button @click="loginAnonymously" class="btn btn-ghost btn-block mt-2">
+                            <span class="material-icons">person_outline</span> Login as Guest
+                        </button>
+                    </div>
+                    <div v-else>
+                        <div class="form-control mb-4">
+                            <label for="signupEmail" class="label">Email</label>
+                            <input type="email" id="signupEmail" v-model="signupEmail" class="input input-bordered">
+                        </div>
+                        <div class="form-control mb-6">
+                            <label for="signupPassword" class="label">Password</label>
+                            <input type="password" id="signupPassword" v-model="signupPassword" class="input input-bordered">
+                        </div>
+                        <button @click="signup" class="btn btn-success btn-block">
+                            <span class="material-icons">person_add</span> Signup
+                        </button>
+                    </div>
+                    <div class="text-center mt-6">
+                        <button @click="toggleForm" class="link link-primary">
+                            <span class="material-icons">{{ showLoginForm ? 'person_add' : 'login' }}</span> {{ showLoginForm ? 'Switch to Signup' : 'Switch to Login' }}
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
-    </main>
-
-    <div id="tutorialModal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h2 id="modalTitle"></h2>
-            <div id="modalContent"></div>
+        <div v-else>
+            <div class="navbar bg-base-100 shadow-lg mb-6">
+                <div class="flex-1">
+                    <h1 class="text-2xl font-bold">Discord Reporting System</h1>
+                </div>
+                <div class="flex-none">
+                    <button @click="logout" class="btn btn-primary">
+                        <span class="material-icons">logout</span> Logout
+                    </button>
+                </div>
+            </div>
+            <div class="card bg-base-100 shadow-xl mb-6" v-if="!isGuest">
+                <div class="card-body">
+                    <h2 class="text-lg font-bold mb-4">Report a Discord Account</h2>
+                    <div class="form-control mb-4">
+                        <label for="discordUsername" class="label">Discord Username</label>
+                        <input type="text" id="discordUsername" v-model="discordUsername" class="input input-bordered" placeholder="Enter Discord Tag">
+                    </div>
+                    <div class="form-control mb-4">
+                        <label for="reportReason" class="label">Reason for Report</label>
+                        <select v-model="reportReason" class="select select-bordered">
+                            <option disabled value="">Select Reason</option>
+                            <option>Scamming</option>
+                            <option>Bad Behavior</option>
+                            <option>Racism</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    <div class="form-control mb-4" v-show="reportReason === 'Other'">
+                        <label for="otherReason" class="label">Other Reason</label>
+                        <input type="text" id="otherReason" v-model="otherReason" class="input input-bordered">
+                    </div>
+                    <div class="form-control mb-4">
+                        <label for="additionalInfo" class="label">Additional Information</label>
+                        <textarea id="additionalInfo" v-model="additionalInfo" class="textarea textarea-bordered" placeholder="Add any additional details"></textarea>
+                    </div>
+                    <button @click="submitReport" class="btn btn-primary">
+                        <span class="material-icons">report</span> Submit Report
+                    </button>
+                </div>
+            </div>
+            <div class="card bg-base-100 shadow-xl mb-6">
+                <div class="card-body">
+                    <h2 class="text-lg font-bold mb-4">Search for Accounts</h2>
+                    <div class="form-control mb-4 flex">
+                        <label for="searchUsername" class="label">Search Discord Username</label>
+                        <input type="text" id="searchUsername" v-model="searchUsername" class="input input-bordered" placeholder="Search Username">
+                        <button @click="searchReports" class="btn btn-secondary ml-2">Search</button>
+                    </div>
+                    <h2 class="text-lg font-bold mb-4">Reported Accounts</h2>
+                    <div v-if="filteredReports.length === 0" class="text-center">No reports found.</div>
+                    <ul>
+                        <li v-for="(reportGroup, username) in groupedReports" :key="username" class="border-b py-2">
+                            <strong>{{ username }}</strong>
+                            <ul>
+                                <li v-for="report in reportGroup" :key="report.id">
+                                    {{ report.reason }} - {{ report.additionalInfo }}
+                                    <button v-if="isAdmin" @click="deleteReport(report.id)" class="btn btn-sm btn-danger ml-2">Delete</button>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyBukLDNezm-GyGrEs10kIeTegrEcYY6JPU",
+            authDomain: "discord-26d5c.firebaseapp.com",
+            databaseURL: "https://discord-26d5c-default-rtdb.firebaseio.com/",
+            projectId: "discord-26d5c",
+            storageBucket: "discord-26d5c.firebasestorage.app",
+            messagingSenderId: "1098719364896",
+            appId: "1:1098719364896:web:ec85f3ee8d3929f246f945"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+        new Vue({
+            el: '#app',
+            data: {
+                user: null,
+                isAdmin: false,
+                showLoginForm: true,
+                loginEmail: '',
+                loginPassword: '',
+                signupEmail: '',
+                signupPassword: '',
+                discordUsername: '',
+                reportReason: '',
+                otherReason: '',
+                additionalInfo: '',
+                searchUsername: '',
+                reports: [],
+                filteredReports: [],
+                isGuest: false,
+                groupedReports: {}
+            },
+            methods: {
+                login() {
+                    auth.signInWithEmailAndPassword(this.loginEmail, this.loginPassword).then(userCredential => {
+                        this.user = userCredential.user;
+                        this.isGuest = false;
+                        this.checkAdmin();
+                        this.fetchReports();
+                    });
+                },
+                checkAdmin() {
+                    const adminEmail = "admin@admin.com"; // Admin email address
+                    this.isAdmin = this.user.email === adminEmail;
+                },
+                loginAnonymously() {
+                    auth.signInAnonymously().then(() => {
+                        this.user = auth.currentUser;
+                        this.isGuest = true;
+                        this.fetchReports();
+                    });
+                },
+                signup() {
+                    auth.createUserWithEmailAndPassword(this.signupEmail, this.signupPassword).then(userCredential => {
+                        this.user = userCredential.user;
+                        this.isGuest = false;
+                        this.fetchReports();
+                    });
+                },
+                toggleForm() {
+                    this.showLoginForm = !this.showLoginForm;
+                },
+                logout() {
+                    auth.signOut().then(() => {
+                        this.user = null;
+                        this.reports = [];
+                        this.filteredReports = [];
+                        this.isGuest = false;
+                    });
+                },
+                submitReport() {
+                    const reportData = {
+                        discordUsername: this.discordUsername,
+                        reason: this.reportReason === 'Other' ? this.otherReason : this.reportReason,
+                        additionalInfo: this.additionalInfo,
+                        uid: this.user ? this.user.uid : null
+                    };
+                    if (reportData.discordUsername && reportData.reason) {
+                        database.ref('reports').push(reportData).then(() => {
+                            this.fetchReports();
+                            this.resetForm();
+                        }).catch(error => {
+                            console.error("Error submitting report: ", error);
+                        });
+                    } else {
+                        alert("Please fill in all required fields.");
+                    }
+                },
+                fetchReports() {
+                    database.ref('reports').once('value').then(snapshot => {
+                        this.reports = [];
+                        snapshot.forEach(childSnapshot => {
+                            this.reports.push({ id: childSnapshot.key, ...childSnapshot.val() });
+                        });
+                        this.groupReports();
+                    });
+                },
+                resetForm() {
+                    this.discordUsername = '';
+                    this.reportReason = '';
+                    this.otherReason = '';
+                    this.additionalInfo = '';
+                },
+                searchReports() {
+                    this.filteredReports = this.reports.filter(report => report.discordUsername.toLowerCase().includes(this.searchUsername.toLowerCase()));
+                    this.groupReports();
+                },
+                deleteReport(reportId) {
+                    database.ref('reports/' + reportId).remove().then(() => {
+                        this.fetchReports();
+                    }).catch(error => {
+                        console.error("Error deleting report: ", error);
+                    });
+                },
+                groupReports() {
+                    this.groupedReports = {};
+                    this.reports.forEach(report => {
+                        if (!this.groupedReports[report.discordUsername]) {
+                            this.groupedReports[report.discordUsername] = [];
+                        }
+                        this.groupedReports[report.discordUsername].push(report);
+                    });
+                }
+            },
+            created() {
+                auth.onAuthStateChanged(user => {
+                    this.user = user;
+                    if (user) {
+                        this.isGuest = user.isAnonymous;
+                        this.checkAdmin();
+                        this.fetchReports();
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
